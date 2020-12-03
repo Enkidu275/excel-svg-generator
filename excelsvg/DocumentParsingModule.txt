@@ -1,0 +1,271 @@
+Public Function GETELEMENTVALUE(document_string As String, id As String, value As String) As String
+    Dim uielement As String
+    uielement = GETELEMENT(document_string, id)
+    GETELEMENTVALUE = GETVALUE(uielement, value)
+End Function
+
+Public Function GETELEMENT(document_string As String, id As String) As String
+    Dim left_value As Integer
+    Dim right_value As Integer
+    Dim element_starter As String
+    Dim element_ender As String
+    Dim next_same_element As Integer
+    Dim next_element_end As Integer
+    left_value = MOVERIGHTUNTIL(0, "id=""" & id & """", document_string)
+    If left_value = 0 Then
+        GETELEMENT = ""
+        Exit Function
+    End If
+    left_value = MOVELEFTUNTIL(left_value, "<", document_string)
+    element_starter = Mid(document_string, left_value, MOVERIGHTUNTIL(left_value, " ", document_string) - left_value)
+    element_ender = "</" & Mid(element_starter, 2)
+    next_same_element = MOVERIGHTUNTIL(left_value, element_starter, document_string)
+    next_element_end = MOVERIGHTUNTIL(left_value, element_ender, document_string)
+    If next_element_end = 0 Then
+        right_value = MOVERIGHTUNTIL(left_value, ">", document_string)
+        GETELEMENT = Mid(document_string, left_value, right_value - left_value)
+        Exit Function
+    End If
+    If next_same_element = 0 Then
+        right_value = MOVERIGHTUNTIL(MOVERIGHTUNTIL(left_value, element_ender, document_string), ">", document_string)
+        GETELEMENT = Mid(document_string, left_value, right_value - left_value + 1)
+        Exit Function
+    End If
+    If next_element_end < next_same_element Then
+        right_value = MOVERIGHTUNTIL(MOVERIGHTUNTIL(left_value, element_ender, document_string), ">", document_string)
+        GETELEMENT = Mid(document_string, left_value, right_value - left_value + 1)
+        Exit Function
+    Else
+        right_value = MOVERIGHTUNTIL(left_value, ">", document_string)
+        GETELEMENT = Mid(document_string, left_value, right_value - left_value + 1)
+        Exit Function
+    End If
+    GETELEMENT = ""
+End Function
+
+Public Function OPENURL(urlobject As String) As String
+    Dim temp_string As String
+    temp_string = Mid(urlobject, 5, Len(urlobject) - 5)
+    If Left(temp_string, 1) = "#" Then temp_string = Mid(temp_string, 2)
+    OPENURL = temp_string
+End Function
+
+Public Function ISURL(potentialurl As String) As Boolean
+    If Left(potentialurl, 4) = "url(" And Right(potentialurl, 1) = ")" Then
+        ISURL = True
+        Exit Function
+    End If
+    ISURL = False
+End Function
+
+Public Function MOVELEFTUNTIL(from_str As Integer, until_str As String, in_str As String) As Integer
+    Dim displacement As Integer
+    Dim space As Integer
+    Dim until_str_len As Integer
+    displacement = 1
+    space = from_str - 1
+    until_str_len = Len(until_str)
+    While displacement <= space
+        If Mid(in_str, from_str - displacement, until_str_len) = until_str Then
+            MOVELEFTUNTIL = from_str - displacement
+            Exit Function
+        End If
+        displacement = displacement + 1
+    Wend
+    MOVELEFTUNTIL = 0
+End Function
+
+Public Function GETVALUE(element_string As String, value As String) As String
+    Dim left_value As Integer
+    Dim right_value As Integer
+    left_value = MOVERIGHTUNTIL(0, value, element_string) + Len(value) + 2
+    right_value = MOVERIGHTUNTIL(left_value, """", element_string)
+    GETVALUE = Mid(element_string, left_value, right_value - left_value)
+End Function
+
+Public Function MOVERIGHTUNTIL(from_str As Integer, until_str As String, in_str As String) As Integer
+    Dim displacement As Integer
+    Dim space As Integer
+    Dim until_str_len As Integer
+    displacement = 1
+    space = Len(in_str) - from_str
+    until_str_len = Len(until_str)
+    While displacement <= space
+        If Mid(in_str, from_str + displacement, until_str_len) = until_str Then
+            MOVERIGHTUNTIL = from_str + displacement
+            Exit Function
+        End If
+        displacement = displacement + 1
+    Wend
+    MOVERIGHTUNTIL = 0
+End Function
+
+Public Function COUNTINSTANCES(substr_value As String, document_value As String) As Integer
+    Dim instance_count As Integer
+    instance_count = 0
+    Dim current_response As Integer
+    current_response = 1
+    While current_response <> 0
+        current_response = MOVERIGHTUNTIL(current_response, substr_value, document_value)
+        If current_response > 0 Then instance_count = instance_count + 1
+    Wend
+    COUNTINSTANCES = instance_count
+End Function
+
+Public Function COMPILEIDSBYTEMPLATE(template As String, document_value As String)
+    Dim result As String
+    Dim current_parent As Integer
+    Dim child_count As Integer
+    Dim i As Integer
+    result = ""
+    current_parent = 0
+    While document_value <> ""
+        current_parent = current_parent + 1
+        child_count = COUNTINSTANCES("id=""" & template & CStr(current_parent), document_value)
+        If child_count = 0 Then
+            If result = "" Then
+                COMPILEISBYTEMPLATE = ""
+                Exit Function
+            End If
+            COMPILEIDSBYTEMPLATE = Left(result, Len(result) - 1)
+            Exit Function
+        End If
+        If child_count = 1 Then
+            result = result & template & CStr(current_parent) & "_0,"
+        End If
+        If child_count > 1 Then
+            i = 0
+            While i < child_count
+                i = i + 1
+                result = result & template & CStr(current_parent) & "_" & CStr(i) & ","
+            Wend
+        End If
+    Wend
+End Function
+
+Public Function VALUELIST(htmldocuments As Range, id As String, value As String, default_value As String, delimiter As String) As String
+    Dim result As String
+    Dim current_element As String
+    Dim current_value As String
+    Dim first_value As String
+    Dim has_changed As Boolean
+    Dim first_value As String
+    Dim i As Integer
+    result = ""
+    i = 0
+    has_changed = False
+    For Each document In htmldocuments
+        i = i + 1
+        current_element = GETELEMENT(document.value, id)
+        If current_element = "" Then
+            current_value = default_value
+        Else
+            current_value = GETVALUE(current_element, value)
+            If current_value = "" Then
+                current_value = default_value
+            End If
+        End If
+        If i = 1 Then
+            first_value = current_value
+        Else
+            If current_value <> first_value Then
+                has_changed = True
+            End If
+        End If
+        If ISURL(current_value) Then
+            result = current_value
+            VALUELIST = result
+            Exit Function
+        End If
+        result = result & current_value & delimiter
+    Next
+    result = result & first_value
+    If Not has_changed Then
+        result = first_value
+        VALUELIST = result
+        Exit Function
+    End If
+    VALUELIST = result
+End Function
+
+Public Function FIRSTELEMENT(htmldocuments As Range, id As String) As String
+    Dim current_element As String
+    For Each document In htmldocuments
+        current_element = GETELEMENT(document.value, id)
+        If current_element <> "" Then
+            FIRSTELEMENT = current_element
+            Exit Function
+        End If
+    Next
+    FIRSTELEMENT = ""
+End Function
+
+Public Function LISTLENGTH(list_string As String, delimiter As String) As Integer
+    If list_string = "" Then
+        LISTLENGTH = 0
+        Exit Function
+    End If
+    LISTLENGTH = COUNTINSTANCES(delimiter, list_string) + 1
+End Function
+
+Public Function LISTITEM(delimiter As String, instance As Integer, delimited_list As String) As String
+    Dim list_count As Integer
+    Dim left_delimiter_location As Integer
+    Dim right_delimiter_location As Integer
+    Dim current_delimiter_location As Integer
+    Dim current_delimiter_instance As Integer
+    Dim first_delimiter As Integer
+    Dim result As String
+    list_count = COUNTINSTANCES(delimiter, delimited_list)
+    If instance > list_count + 1 Or instance < 1 Then
+        LISTITEM = ""
+        Exit Function
+    End If
+    If instance = list_count Then
+        result = Right(delimited_list, Len(delimited_list) - MOVELEFTUNTIL(Len(delimited_list) + 1, delimiter, delimited_list))
+    End If
+    current_delimiter_instance = 1
+    current_delimiter_location = 0
+    While current_delimiter_instance < instance
+        current_delimiter_location = MOVERIGHTUNTIL(current_delimiter_location, delimiter, delimited_list)
+        current_delimiter_instance = current_delimiter_instance + 1
+    Wend
+    result = Mid(delimited_list, current_delimiter_location + 1)
+    first_delimiter = MOVERIGHTUNTIL(0, delimiter, result)
+    If first_delimiter > 0 Then
+        result = Left(result, first_delimiter - 1)
+    End If
+    LISTITEM = result
+End Function
+
+Public Function LISTINDEX(list_string As String, delimiter As String, value As String) As Integer
+    Dim current_index As Integer
+    current_index = 1
+    
+End Function
+
+Public Function NEXTLTOC(path As String) As String
+    Dim current_L_location As Integer
+    Dim result As String
+    Dim left_container_boundary As Integer
+    Dim right_container_boundary As Integer
+    Dim running As Boolean
+    right_container_boundary = 0
+    result = ""
+    While right_container_boundary <= Len(path)
+        left_container_boundary = right_container_boundary
+        running = True
+        While running
+            right_container_boundary = right_container_boundary + 1
+            If right_container_boundary > Len(path) Then
+                LTOCFORMAT = result
+                Exit Function
+            End If
+            If Mid(path, right_container_boundary) = "L" Or Mid(path, right_container_boundary) = "C" Or Mid(path, right_container_boundary) = "Z" Then
+                
+            Else
+                
+            End If
+        Wend
+    Wend
+End Function

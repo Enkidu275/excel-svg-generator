@@ -1,0 +1,411 @@
+Public Function PATHDATA(shape_index As Integer, group_index As Integer, scale_multiplier As Double, offset_x As Double, offset_y As Double) As String
+Dim shape As shape
+Dim result As String
+Dim i As Integer
+Dim c_count As Integer
+Dim node_h As Integer
+Dim node_v As Integer
+    If ActiveSheet.Shapes.Count < shape_index Then
+        PATHDATA = "M0 0L0 0Z"
+        Exit Function
+    End If
+    If group_index = 0 Then
+        Set shape = ActiveSheet.Shapes(shape_index)
+    Else
+        If ActiveSheet.Shapes(shape_index).Type <> msoGroup Then
+            PATHDATA = "M0 0L0 0Z"
+            Exit Function
+        End If
+        If ActiveSheet.Shapes(shape_index).GroupItems.Count < group_index Then
+            PATHDATA = "M0 0L0 0Z"
+            Exit Function
+        End If
+        Set shape = ActiveSheet.Shapes(shape_index).GroupItems(group_index)
+    End If
+    If shape.Type = msoAutoShape Then
+        If shape.AutoShapeType = 9 Then
+            result = "M" & Round((shape.Left + shape.Width * 0.5 - offset_x) * scale_multiplier, 0) & " " & Round((shape.top - offset_y) * scale_multiplier, 0)
+            result = result & "C" & Round((shape.Left + shape.Width * 0.77 - offset_x) * scale_multiplier, 0) & " " & Round((shape.top - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left + shape.Width - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height * 0.23 - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left + shape.Width - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height * 0.5 - offset_y) * scale_multiplier, 0)
+            result = result & "C" & Round((shape.Left + shape.Width - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height * 0.77 - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left + shape.Width * 0.77 - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left + shape.Width * 0.5 - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height - offset_y) * scale_multiplier, 0)
+            result = result & "C" & Round((shape.Left + shape.Width * 0.23 - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height * 0.77 - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height * 0.5 - offset_y) * scale_multiplier, 0)
+            result = result & "C" & Round((shape.Left - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height * 0.23 - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left + shape.Width * 0.23 - offset_x) * scale_multiplier, 0) & " " & Round((shape.top - offset_y) * scale_multiplier, 0)
+            result = result & " " & Round((shape.Left + shape.Width * 0.5 - offset_x) * scale_multiplier, 0) & " " & Round((shape.top - offset_y) * scale_multiplier, 0)
+            result = result & "Z"
+            PATHDATA = result
+            Exit Function
+        End If
+        If shape.AutoShapeType = 1 Or shape.AutoShapeType = 5 Or shape.AutoShapeType = 151 Or shape.AutoShapeType = 152 Or shape.AutoShapeType = 157 Then
+            result = "M" & Round((shape.Left - offset_x) * scale_multiplier, 0) & " " & Round((shape.top - offset_y) * scale_multiplier, 0)
+            result = result & "L" & Round((shape.Left + shape.Width - offset_x) * scale_multiplier, 0) & " " & Round((shape.top - offset_y) * scale_multiplier, 0)
+            result = result & "L" & Round((shape.Left + shape.Width - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height - offset_y) * scale_multiplier, 0)
+            result = result & "L" & Round((shape.Left - offset_x) * scale_multiplier, 0) & " " & Round((shape.top + shape.Height - offset_y) * scale_multiplier, 0)
+            result = result & "Z"
+            PATHDATA = result
+            Exit Function
+        End If
+        PATHDATA = "Not Recognized"
+        Exit Function
+    End If
+    If shape.Type = msoFreeform Then
+        i = 0
+        c_count = 0
+        result = ""
+        For Each nd In shape.Nodes
+            i = i + 1
+            If i = 1 Then
+                result = "M" & CStr(Round((shape.Nodes.Item(i).Points(1, 1) - offset_x) * scale_multiplier, 0)) & " " & CStr(Round((shape.Nodes.Item(i).Points(1, 2) - offset_y) * scale_multiplier, 0))
+            Else
+                If i = shape.Nodes.Count And i > 2 And shape.Nodes.Item(shape.Nodes.Count).Points(1, 2) = shape.Nodes.Item(1).Points(1, 2) And shape.Nodes.Item(shape.Nodes.Count).Points(1, 1) = shape.Nodes.Item(1).Points(1, 1) Then
+                    result = result & "Z"
+                Else
+                    If nd.SegmentType = msoSegmentLine Then
+                        result = result & "L" & CStr(Round((shape.Nodes.Item(i).Points(1, 1) - offset_x) * scale_multiplier, 0)) & " " & CStr(Round((shape.Nodes.Item(i).Points(1, 2) - offset_y) * scale_multiplier, 0))
+                    Else
+                        c_count = c_count + 1
+                        If c_count Mod 3 = 1 Then
+                            result = result & "C" & CStr(Round((shape.Nodes.Item(i).Points(1, 1) - offset_x) * scale_multiplier, 0)) & " " & CStr(Round((shape.Nodes.Item(i).Points(1, 2) - offset_y) * scale_multiplier, 0))
+                        Else
+                            result = result & " " & CStr(Round((shape.Nodes.Item(i).Points(1, 1) - offset_x) * scale_multiplier, 0)) & " " & CStr(Round((shape.Nodes.Item(i).Points(1, 2) - offset_y) * scale_multiplier, 0))
+                        End If
+                    End If
+                End If
+            End If
+        Next
+        PATHDATA = result
+        Exit Function
+    End If
+    PATHDATA = "M0 0L0 0Z"
+End Function
+
+Public Function FILLDATA(shape_index As Integer, group_index As Integer, scale_multiplier As Double, offset_x As Double, offset_y As Double, document_type As String) As String
+Dim shape As shape
+Dim result As String
+Dim gradientcount As Long
+    If ActiveSheet.Shapes.Count < shape_index Then
+        FILLDATA = "none"
+        Exit Function
+    End If
+    If group_index = 0 Then
+        Set shape = ActiveSheet.Shapes(shape_index)
+    Else
+        If ActiveSheet.Shapes(shape_index).Type <> msoGroup Then
+            FILLDATA = "none"
+            Exit Function
+        End If
+        If ActiveSheet.Shapes(shape_index).GroupItems.Count < group_index Then
+            FILLDATA = "none"
+            Exit Function
+        End If
+        Set shape = ActiveSheet.Shapes(shape_index).GroupItems(group_index)
+    End If
+    If shape.Type = msoFreeform Or shape.Type = msoAutoShape Then
+        If shape.Fill.Type = 1 Then
+            result = "#"
+            If document_type = "xml" Then result = result & Application.WorksheetFunction.Dec2Hex(Round((1 - shape.Fill.Transparency) * 255, 2))
+            result = result & Right(Application.WorksheetFunction.Dec2Hex(shape.Fill.ForeColor.RGB), 2)
+            result = result & Mid(Application.WorksheetFunction.Dec2Hex(shape.Fill.ForeColor.RGB, 6), 3, 2)
+            result = result & Left(Application.WorksheetFunction.Dec2Hex(shape.Fill.ForeColor.RGB, 6), 2)
+            If document_type <> "xml" Then result = result & Application.WorksheetFunction.Dec2Hex(Round((1 - shape.Fill.Transparency) * 255, 2))
+            FILLDATA = result
+            Exit Function
+        End If
+        If shape.Fill.Type = 2 Then
+            Dim color_1 As String
+            Dim color_2 As String
+            result = "<pattern id=""fill" & CStr(shape_index) & "_" & CStr(group_index) & """ width=""16"" height=""16"" patternunits=""userSpaceOnUse""> "
+            color_1 = "#" & Right(Application.WorksheetFunction.Dec2Hex(shape.Fill.ForeColor.RGB), 2) & Mid(Application.WorksheetFunction.Dec2Hex(shape.Fill.ForeColor.RGB, 6), 3, 2) & Left(Application.WorksheetFunction.Dec2Hex(shape.Fill.ForeColor.RGB, 6), 2)
+            color_2 = "#" & Right(Application.WorksheetFunction.Dec2Hex(shape.Fill.BackColor.RGB), 2) & Mid(Application.WorksheetFunction.Dec2Hex(shape.Fill.BackColor.RGB, 6), 3, 2) & Left(Application.WorksheetFunction.Dec2Hex(shape.Fill.BackColor.RGB, 6), 2)
+            result = result & "<rect width=""16"" height=""16"" style=""stroke: none; fill: " & color_1 & """/> "
+            If shape.Fill.Pattern = 17 Or shape.Fill.Pattern = 36 Then
+                result = result & "<rect width=""8"" height=""8"" style=""stroke: none; fill: " & color_2 & """/> "
+                result = result & "<rect width=""8"" height=""8"" x=""8"" y=""8"" style=""stroke: none; fill: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 39 Then
+                result = result & "<path d=""M0 8L8 16L16 8L8 0Z"" style=""stroke: none; fill: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 19 Or shape.Fill.Pattern = 30 Or shape.Fill.Pattern = 13 Then
+                result = result & "<rect width=""16"" height=""8"" style=""stroke: none; fill: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 20 Or shape.Fill.Pattern = 29 Or shape.Fill.Pattern = 14 Then
+                result = result & "<rect width=""8"" height=""16"" style=""stroke: none; fill: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 22 Or shape.Fill.Pattern = 16 Or shape.Fill.Pattern = 26 Then
+                result = result & "<path d=""M0 16L16 0"" style=""stroke: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 21 Or shape.Fill.Pattern = 15 Or shape.Fill.Pattern = 25 Then
+                result = result & "<path d=""M0 0L16 16"" style=""stroke: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 23 Or shape.Fill.Pattern = 34 Or shape.Fill.Pattern = 45 Then
+                result = result & "<rect width=""14"" height=""14"" style=""stroke: none; fill: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 24 Or shape.Fill.Pattern = 40 Or shape.Fill.Pattern = 41 Then
+                result = result & "<path d=""M0 16L16 0"" style=""stroke: " & color_2 & """/> "
+                result = result & "<path d=""M0 0L16 16"" style=""stroke: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 31 Then
+                result = result & "<path d=""M1 1L1 8"" style=""stroke: " & color_2 & """/> "
+                result = result & "<path d=""M9 9L9 16"" style=""stroke: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 32 Then
+                result = result & "<path d=""M1 1L8 1"" style=""stroke: " & color_2 & """/> "
+                result = result & "<path d=""M9 9L16 9"" style=""stroke: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 28 Then
+                result = result & "<path d=""M1 1L3 8"" style=""stroke: " & color_2 & """/> "
+                result = result & "<path d=""M9 9L11 16"" style=""stroke: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            If shape.Fill.Pattern = 27 Then
+                result = result & "<path d=""M1 1L8 3"" style=""stroke: " & color_2 & """/> "
+                result = result & "<path d=""M9 9L16 11"" style=""stroke: " & color_2 & """/> "
+                result = result & "</pattern>"
+                FILLDATA = result
+                Exit Function
+            End If
+            result = result & "<circle cx=""8"" cy=""8"" r=""6"" style=""stroke: none; fill: " & color_2 & """/> "
+            result = result & "</pattern>"
+            FILLDATA = result
+            Exit Function
+        End If
+        If shape.Fill.Type = 3 Then
+            If shape.Fill.GradientStyle = msoGradientFromCenter Or shape.Fill.GradientStyle = msoGradientFromCorner Then
+                result = "<radialGradient id=""fill" & CStr(shape_index) & "_" & CStr(group_index) & """> "
+                For Each gd In shape.Fill.GradientStops
+                    result = result & "<stop offset=""" & gd.Position & """ "
+                    result = result & "style=""stop-color:#"
+                    result = result & Right(Application.WorksheetFunction.Dec2Hex(gd.Color.RGB), 2)
+                    result = result & Mid(Application.WorksheetFunction.Dec2Hex(gd.Color.RGB, 6), 3, 2)
+                    result = result & Left(Application.WorksheetFunction.Dec2Hex(gd.Color.RGB, 6), 2)
+                    result = result & ";stop-opacity:1""/> "
+                Next
+                result = result & "</radialGradient>"
+                FILLDATA = result
+                Exit Function
+            Else
+                result = "<linearGradient id=""fill" & CStr(shape_index) & "_" & CStr(group_index) & """ "
+                Dim degree As Double
+                Dim cos_x As Double
+                Dim sin_y As Double
+                Dim xy_multiplier As Double
+                degree = shape.Fill.GradientAngle
+                cos_x = Cos(degree * 3.14159 / 180)
+                sin_y = Sin(degree * 3.14159 / 180)
+                xy_multiplier = 1 / Application.WorksheetFunction.Max(cos_x, sin_y, -cos_x, -sin_y)
+                cos_x = cos_x * xy_multiplier * 50
+                sin_y = sin_y * xy_multiplier * 50
+                result = result & "x1=""" & Round(50 - cos_x) & "%"" "
+                result = result & "y1=""" & Round(50 - sin_y) & "%"" "
+                result = result & "x2=""" & Round(50 + cos_x) & "%"" "
+                result = result & "y2=""" & Round(50 + sin_y) & "%""> "
+                For Each gd In shape.Fill.GradientStops
+                    result = result & "<stop offset=""" & gd.Position & """ "
+                    result = result & "style=""stop-color:#"
+                    result = result & Right(Application.WorksheetFunction.Dec2Hex(gd.Color.RGB), 2)
+                    result = result & Mid(Application.WorksheetFunction.Dec2Hex(gd.Color.RGB, 6), 3, 2)
+                    result = result & Left(Application.WorksheetFunction.Dec2Hex(gd.Color.RGB, 6), 2)
+                    result = result & ";stop-opacity:1""/> "
+                Next
+                result = result & "</linearGradient>"
+                FILLDATA = result
+                Exit Function
+            End If
+            FILLDATA = result
+            Exit Function
+        End If
+        If shape.Fill.Type = 6 Then
+            If shape.Fill.Visible <> msoTrue Then
+                FILLDATA = "none"
+                Exit Function
+            End If
+            result = "<pattern id=""fill" & CStr(shape_index) & "_" & CStr(group_index) & """ patternUnits=""userSpaceOnUse"" & width="""
+            result = result & Round(shape.Width * scale_multiplier) & """ height=""" & Round(shape.Height * scale_multiplier) & """ /> "
+            result = result & "<image href=""example_only.jpg"" x=""" & Round(offset_x + shape.Left) & """ y=""" & Round(offset_y + shape.top) & """ "
+            result = result & "width=""" & Round(shape.Width * scale_multiplier) & """"
+            result = result & "</pattern>"
+            FILLDATA = result
+            Exit Function
+        End If
+        If shape.Fill.Type = 4 Then
+            FILLDATA = "url(#defaultimage)"
+            Exit Function
+        End If
+    End If
+    FILLDATA = "none"
+End Function
+
+Public Function LINEDATA(shape_index As Integer, group_index As Integer) As String
+    Dim shape As shape
+    Dim result As String
+    If ActiveSheet.Shapes.Count < shape_index Then
+        LINEDATA = "none"
+        Exit Function
+    End If
+    If group_index = 0 Then
+        Set shape = ActiveSheet.Shapes(shape_index)
+    Else
+        If ActiveSheet.Shapes(shape_index).Type <> msoGroup Then
+            LINEDATA = "stroke=""none"""
+            Exit Function
+        End If
+        If ActiveSheet.Shapes(shape_index).GroupItems.Count < group_index Then
+            LINEDATA = "stroke=""none"""
+            Exit Function
+        End If
+        Set shape = ActiveSheet.Shapes(shape_index).GroupItems(group_index)
+    End If
+    If shape.Line.Visible <> msoTrue Then
+        LINEDATA = "stroke=""none"""
+    End If
+    If shape.Line.Weight <= 0.5 Then
+        LINEDATA = "stroke=""none"""
+        Exit Function
+    End If
+    result = "stroke=""#"
+    result = result & Right(Application.WorksheetFunction.Dec2Hex(shape.Line.ForeColor.RGB), 2)
+    result = result & Mid(Application.WorksheetFunction.Dec2Hex(shape.Line.ForeColor.RGB, 6), 3, 2)
+    result = result & Left(Application.WorksheetFunction.Dec2Hex(shape.Line.ForeColor.RGB, 6), 2)
+    result = result & """ stroke-width=""" & Round(shape.Line.Weight) & """"
+    If shape.Line.DashStyle = 1 Then
+        LINEDATA = result
+        Exit Function
+    End If
+    If shape.Line.DashStyle = 11 Then
+        result = result & " stroke-dasharray=""3,3"""
+        LINEDATA = result
+        Exit Function
+    End If
+    If shape.Line.DashStyle = 10 Then
+        result = result & " stroke-dasharray=""3,3,2,3"""
+        LINEDATA = result
+        Exit Function
+    End If
+    If shape.Line.DashStyle = 4 Then
+        result = result & " stroke-dasharray=""3,2"""
+        LINEDATA = result
+        Exit Function
+    End If
+    If shape.Line.DashStyle = 5 Then
+        result = result & " stroke-dasharray=""3,2,2,2"""
+        LINEDATA = result
+        Exit Function
+    End If
+    If shape.Line.DashStyle = 7 Then
+        result = result & " stroke-dasharray=""4,2"""
+        LINEDATA = result
+        Exit Function
+    End If
+    If shape.Line.DashStyle = 8 Then
+        result = result & " stroke-dasharray=""4,1,1,1"""
+        LINEDATA = result
+        Exit Function
+    End If
+    If shape.Line.DashStyle = 9 Then
+        result = result & " stroke-dasharray=""4,1,1,1,1,1"""
+        LINEDATA = result
+        Exit Function
+    End If
+    LINEDATA = result
+End Function
+
+Public Function WIDTHDATA(shape_index As Integer, group_index As Integer, scale_multiplier As Double, offset_x As Double, offset_y As Double) As Double
+    Dim shape As shape
+    If ActiveSheet.Shapes.Count < shape_index Then
+        WIDTHDATA = 0
+        Exit Function
+    End If
+    If group_index = 0 Then
+        Set shape = ActiveSheet.Shapes(shape_index)
+    Else
+        If ActiveSheet.Shapes(shape_index).Type <> msoGroup Then
+            WIDTHDATA = 0
+            Exit Function
+        End If
+        If ActiveSheet.Shapes(shape_index).GroupItems.Count < group_index Then
+            WIDTHDATA = 0
+            Exit Function
+        End If
+        Set shape = ActiveSheet.Shapes(shape_index).GroupItems(group_index)
+    End If
+    WIDTHDATA = (shape.Width + shape.Left - offset_x) * scale_multiplier
+End Function
+
+Public Function HEIGHTDATA(shape_index As Integer, group_index As Integer, scale_multiplier As Double, offset_x As Double, offset_y As Double) As Double
+    Dim shape As shape
+    If ActiveSheet.Shapes.Count < shape_index Then
+        HEIGHTDATA = 0
+        Exit Function
+    End If
+    If group_index = 0 Then
+        Set shape = ActiveSheet.Shapes(shape_index)
+    Else
+        If ActiveSheet.Shapes(shape_index).Type <> msoGroup Then
+            HEIGHTDATA = 0
+            Exit Function
+        End If
+        If ActiveSheet.Shapes(shape_index).GroupItems.Count < group_index Then
+            HEIGHTDATA = 0
+            Exit Function
+        End If
+        Set shape = ActiveSheet.Shapes(shape_index).GroupItems(group_index)
+    End If
+    HEIGHTDATA = (shape.Height + shape.top - offset_y) * scale_multiplier
+End Function
+
+Public Function GETBOUNDINGBOX(value As String) As Double
+    Dim max_value As Double
+    max_value = 0
+    For Each shape In ActiveSheet.Shapes
+        If value = "left" Or value = "Left" Then
+            max_value = Application.WorksheetFunction.Max(max_value, shape.Left)
+        End If
+        If value = "right" Or value = "Right" Then
+            max_value = Application.WorksheetFunction.Max(max_value, shape.Left)
+        End If
+        If value = "top" Or value = "Top" Then
+            max_value = Application.WorksheetFunction.Max(max_value, shape.Left)
+        End If
+        If value = "bottom" Or value = "Bottom" Then
+            max_value = Application.WorksheetFunction.Max(max_value, shape.Left)
+        End If
+    Next
+    GETBOUNDINGBOX = max_value
+End Function

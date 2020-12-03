@@ -1,0 +1,112 @@
+Public Function HTMLSVG(scale_multiplier As Double) As String
+    Dim def_list As String
+    Dim path_list As String
+    Dim current_path As String
+    Dim current_fill As String
+    Dim current_line As String
+    Dim result As String
+    Dim svg_window_x As Double
+    Dim svg_window_y As Double
+    Dim parent_item As Integer
+    Dim child_item As Integer
+    Dim parent_count As Integer
+    Dim child_count As Integer
+    Dim offset_x As Double
+    Dim offset_y As Double
+    path_list = ""
+    def_list = ""
+    parent_count = ActiveSheet.Shapes.Count
+    parent_item = 0
+    offset_x = 0
+    offset_y = 0
+    svg_window_x = GETBOUNDINGBOX("right")
+    svg_window_y = GETBOUNDINGBOX("bottom")
+    While parent_item < parent_count
+        parent_item = parent_item + 1
+        child_item = 0
+        svg_window_x = Application.WorksheetFunction.Max(svg_window_x, WIDTHDATA(parent_item, 0, scale_multiplier, offset_x, offset_y))
+        svg_window_y = Application.WorksheetFunction.Max(svg_window_y, HEIGHTDATA(parent_item, 0, scale_multiplier, offset_x, offset_y))
+        If ActiveSheet.Shapes(parent_item).Type = msoGroup Then
+            child_count = ActiveSheet.Shapes(parent_item).GroupItems.Count
+            While child_item < child_count
+                child_item = child_item + 1
+                current_path = PATHDATA(parent_item, child_item, scale_multiplier, 0, 0)
+                current_fill = FILLDATA(parent_item, child_item, scale_multiplier, 0, 0, "html")
+                current_line = LINEDATA(parent_item, child_item)
+                path_list = path_list & "<path id=""shape" & parent_item & "_" & child_item
+                path_list = path_list & """ d=""" & current_path & """ " & current_line & " fill="""
+                If Left(current_fill, 1) = "<" Then
+                    def_list = def_list & current_fill & " "
+                    path_list = path_list & "url(#fill" & parent_item & "_" & child_item & ")"" /> "
+                Else
+                    path_list = path_list & current_fill & """ /> "
+                End If
+            Wend
+        Else
+            current_path = PATHDATA(parent_item, child_item, scale_multiplier, 0, 0)
+                current_fill = FILLDATA(parent_item, child_item, scale_multiplier, 0, 0, "html")
+                current_line = LINEDATA(parent_item, child_item)
+                path_list = path_list & "<path id=""shape" & parent_item & "_" & child_item
+                path_list = path_list & """ d=""" & current_path & """ " & current_line & " fill="""
+                If Left(current_fill, 1) = "<" Then
+                    def_list = def_list & current_fill & " "
+                    path_list = path_list & "url(#fill" & parent_item & "_" & child_item & ")"" /> "
+                Else
+                    path_list = path_list & current_fill & """ /> "
+                End If
+        End If
+    Wend
+    result = "<!DOCTYPE html> <body> <svg height=""" & Round(svg_window_y + 20) & """ width=""" & Round(svg_window_x + 20) & """> <defs> " & def_list & "</defs> " & path_list & " </svg> </body> </html>"
+    HTMLSVG = result
+End Function
+
+Public Function COMBINEHTMLSVG(html_documents As Range) As String
+    Dim shape_id_list As String
+    Dim shape_id_count As Integer
+    Dim current_fill_values As String
+    Dim current_path_values As String
+    Dim current_stroke_values As String
+    Dim current_stroke_weight_values As String
+    Dim current_stroke_dash_values As String
+    Dim current_shape_id As Integer
+    Dim document_count As Integer
+    Dim timingchain As String
+    document_count = html_documents.Cells.Count
+    If document_count = 1 Then
+        COMBINEHTMLSVG = html_documents.Cells(1).value
+        Exit Function
+    End If
+    shape_id_list = COMPILEIDSBYTEMPLATE("shape", html_documents.Cells(1).value)
+    If shape_id_list = "" Then
+        COMBINEHTMLSVG = "error: no shapes"
+        Exit Function
+    End If
+    shape_id_count = COUNTINSTANCES(",", shape_id_list) + 1
+    current_shape_id = 1
+    While current_shape_id <= shape_id_count
+        current_fill_values = VALUELIST(html_documents, current_shape_id, "fill", "none", ";")
+        current_path_values = VALUELIST(html_documents, current_shape_id, "d", "none", ";")
+        current_stroke_values = VALUELIST(html_documents, current_shape_id, "stroke", "none", ";")
+        current_stroke_weight_values = VALUELIST(html_documents, current_shape_id, "stroke-width", "none", ";")
+        current_stroke_dash_values = VALUELIST(html_documents, current_shape_id, "stroke-dasharray", "none", ";")
+        
+        current_shape_id = current_shape_id + 1
+    Wend
+    COMBINEHTMLSVG = shape_id_list
+End Function
+
+Public Function ANIMATEBYVALUES(html_documents As Range) As String
+    Dim defs_list As String
+    Dim path_list As String
+    Dim result As String
+    Dim current_path_list As String
+    Dim current_fill_list As String
+    Dim current_linecolor_list As String
+    Dim current_lineweight_list As String
+    Dim current_linedash_list As String
+    
+    Dim current_def_element As String
+    Dim current_path_elementlist As String
+    Dim path_id_list As String
+    
+End Function
